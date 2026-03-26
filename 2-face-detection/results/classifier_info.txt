@@ -1,0 +1,169 @@
+=== Cascade Classifier Info ===
+
+[Data]
+Training: pos 500 + neg 1500 = 2000 samples
+Validation: pos 40 + neg 20 = 60 samples
+
+[Validation Results]
+TP=16  FP=0
+FN=24  TN=20
+Accuracy: 60%
+Detection Rate: 40%
+FPR: 0%
+
+[Cascade Structure]
+Total stages: 5
+Stage T values: {2, 10, 25, 50, 50}
+
+--- Stage 0 (T=2, detectThreshold=1.43269) ---
+  WC[0]: featureIdx=130704, threshold=-22.2021, polarity=1, alpha=1.56219
+  WC[1]: featureIdx=104401, threshold=60.7115, polarity=1, alpha=1.43269
+  alphaSum=2.99488
+
+--- Stage 1 (T=10, detectThreshold=3.79195) ---
+  WC[0]: featureIdx=134576, threshold=-30.2863, polarity=1, alpha=1.46088
+  WC[1]: featureIdx=157197, threshold=0.919489, polarity=-1, alpha=1.11113
+  WC[2]: featureIdx=52284, threshold=-0.695608, polarity=1, alpha=0.869686
+  WC[3]: featureIdx=63809, threshold=0.764071, polarity=-1, alpha=0.881574
+  WC[4]: featureIdx=154047, threshold=4.20306, polarity=-1, alpha=0.71982
+  WC[5]: featureIdx=35723, threshold=23.4502, polarity=1, alpha=0.75425
+  WC[6]: featureIdx=44035, threshold=0.258013, polarity=-1, alpha=0.778265
+  WC[7]: featureIdx=149173, threshold=2.37944, polarity=-1, alpha=0.701236
+  WC[8]: featureIdx=64203, threshold=-1.35248, polarity=1, alpha=0.707138
+  WC[9]: featureIdx=155578, threshold=-0.655809, polarity=1, alpha=0.678005
+  alphaSum=8.66198
+
+--- Stage 2 (T=25, detectThreshold=6.31293) ---
+  WC[0]: featureIdx=130447, threshold=-37.3137, polarity=1, alpha=1.0014
+  WC[1]: featureIdx=560, threshold=7.16585, polarity=1, alpha=0.823867
+  WC[2]: featureIdx=46157, threshold=-1.54906, polarity=1, alpha=0.88604
+  WC[3]: featureIdx=60393, threshold=18.6336, polarity=-1, alpha=0.589365
+  WC[4]: featureIdx=40750, threshold=112.861, polarity=1, alpha=0.542998
+  WC[5]: featureIdx=49996, threshold=4.35595, polarity=-1, alpha=0.609288
+  WC[6]: featureIdx=8390, threshold=-1.80831, polarity=1, alpha=0.522028
+  WC[7]: featureIdx=1388, threshold=0.404287, polarity=1, alpha=0.554937
+  WC[8]: featureIdx=12063, threshold=8.32988, polarity=-1, alpha=0.576435
+  WC[9]: featureIdx=43578, threshold=-0.0249564, polarity=1, alpha=0.488733
+  WC[10]: featureIdx=155304, threshold=-1.27002, polarity=1, alpha=0.481777
+  WC[11]: featureIdx=68821, threshold=-22.189, polarity=-1, alpha=0.538083
+  WC[12]: featureIdx=150696, threshold=1.0114, polarity=-1, alpha=0.538547
+  WC[13]: featureIdx=44322, threshold=-0.223164, polarity=1, alpha=0.472467
+  WC[14]: featureIdx=158678, threshold=28.7322, polarity=1, alpha=0.465761
+  WC[15]: featureIdx=49358, threshold=3.19134, polarity=-1, alpha=0.470709
+  WC[16]: featureIdx=4456, threshold=-0.780887, polarity=1, alpha=0.42789
+  WC[17]: featureIdx=343, threshold=0.0944028, polarity=1, alpha=0.458236
+  WC[18]: featureIdx=133683, threshold=9.41204, polarity=-1, alpha=0.481717
+  WC[19]: featureIdx=123709, threshold=3.17696, polarity=-1, alpha=0.479811
+  WC[20]: featureIdx=61727, threshold=-18.6517, polarity=1, alpha=0.420647
+  WC[21]: featureIdx=156604, threshold=16.9767, polarity=1, alpha=0.463065
+  WC[22]: featureIdx=146196, threshold=-0.823836, polarity=1, alpha=0.436814
+  WC[23]: featureIdx=141765, threshold=-0.0170005, polarity=1, alpha=0.408281
+  WC[24]: featureIdx=114145, threshold=0.662018, polarity=-1, alpha=0.410013
+  alphaSum=13.5489
+
+--- Stage 3 (T=50, detectThreshold=10.2909) ---
+  WC[0]: featureIdx=9598, threshold=-2.48072, polarity=1, alpha=0.797004
+  WC[1]: featureIdx=130697, threshold=-41.7587, polarity=1, alpha=0.618359
+  WC[2]: featureIdx=48960, threshold=1.0075, polarity=-1, alpha=0.554616
+  WC[3]: featureIdx=77507, threshold=4.83814, polarity=1, alpha=0.506281
+  WC[4]: featureIdx=148050, threshold=0.826558, polarity=-1, alpha=0.513937
+  WC[5]: featureIdx=140475, threshold=108.29, polarity=1, alpha=0.48496
+  WC[6]: featureIdx=1618, threshold=0.381889, polarity=-1, alpha=0.424271
+  WC[7]: featureIdx=157241, threshold=-0.290323, polarity=1, alpha=0.397981
+  WC[8]: featureIdx=43720, threshold=-0.0343402, polarity=1, alpha=0.403478
+  WC[9]: featureIdx=155832, threshold=10.1278, polarity=-1, alpha=0.458075
+  WC[10]: featureIdx=242, threshold=-0.181592, polarity=-1, alpha=0.481181
+  WC[11]: featureIdx=130798, threshold=9.72009, polarity=-1, alpha=0.460587
+  WC[12]: featureIdx=161381, threshold=-16.4717, polarity=-1, alpha=0.427847
+  WC[13]: featureIdx=114527, threshold=-0.954448, polarity=1, alpha=0.425413
+  WC[14]: featureIdx=71148, threshold=-0.619532, polarity=1, alpha=0.415951
+  WC[15]: featureIdx=66116, threshold=-25.1718, polarity=1, alpha=0.434832
+  WC[16]: featureIdx=61827, threshold=24.2307, polarity=-1, alpha=0.408012
+  WC[17]: featureIdx=143202, threshold=-0.765737, polarity=-1, alpha=0.413728
+  WC[18]: featureIdx=125510, threshold=13.5542, polarity=-1, alpha=0.43504
+  WC[19]: featureIdx=199, threshold=-0.136116, polarity=-1, alpha=0.407434
+  WC[20]: featureIdx=52964, threshold=2.44293, polarity=-1, alpha=0.404703
+  WC[21]: featureIdx=93718, threshold=2.08607, polarity=1, alpha=0.36681
+  WC[22]: featureIdx=157243, threshold=2.60322, polarity=-1, alpha=0.385279
+  WC[23]: featureIdx=3584, threshold=-0.0898295, polarity=1, alpha=0.359001
+  WC[24]: featureIdx=141801, threshold=0.0551837, polarity=-1, alpha=0.37259
+  WC[25]: featureIdx=64469, threshold=3.18923, polarity=-1, alpha=0.377673
+  WC[26]: featureIdx=52254, threshold=-0.742467, polarity=1, alpha=0.383995
+  WC[27]: featureIdx=996, threshold=-0.0608821, polarity=1, alpha=0.360452
+  WC[28]: featureIdx=125952, threshold=4.69469, polarity=-1, alpha=0.38709
+  WC[29]: featureIdx=99168, threshold=-2.91948, polarity=-1, alpha=0.421849
+  WC[30]: featureIdx=142311, threshold=0.03354, polarity=-1, alpha=0.346987
+  WC[31]: featureIdx=59364, threshold=0.230549, polarity=-1, alpha=0.348968
+  WC[32]: featureIdx=147961, threshold=-1.02136, polarity=1, alpha=0.384416
+  WC[33]: featureIdx=381, threshold=0.137277, polarity=1, alpha=0.375446
+  WC[34]: featureIdx=122871, threshold=-10.1301, polarity=1, alpha=0.405403
+  WC[35]: featureIdx=50923, threshold=0.578034, polarity=1, alpha=0.356301
+  WC[36]: featureIdx=10673, threshold=2.45481, polarity=-1, alpha=0.431178
+  WC[37]: featureIdx=142465, threshold=-0.0838371, polarity=-1, alpha=0.347103
+  WC[38]: featureIdx=150717, threshold=1.55491, polarity=-1, alpha=0.379811
+  WC[39]: featureIdx=158788, threshold=-1.97195, polarity=-1, alpha=0.371292
+  WC[40]: featureIdx=100099, threshold=6.12822, polarity=-1, alpha=0.38964
+  WC[41]: featureIdx=108362, threshold=-12.4021, polarity=1, alpha=0.37228
+  WC[42]: featureIdx=309, threshold=-0.192138, polarity=-1, alpha=0.397166
+  WC[43]: featureIdx=49355, threshold=3.62888, polarity=-1, alpha=0.382346
+  WC[44]: featureIdx=51299, threshold=-0.604973, polarity=1, alpha=0.358005
+  WC[45]: featureIdx=7002, threshold=-0.15335, polarity=-1, alpha=0.351748
+  WC[46]: featureIdx=129527, threshold=8.05427, polarity=-1, alpha=0.386451
+  WC[47]: featureIdx=67142, threshold=1.54038, polarity=1, alpha=0.421471
+  WC[48]: featureIdx=146608, threshold=-1.86096, polarity=1, alpha=0.404952
+  WC[49]: featureIdx=98240, threshold=4.85756, polarity=-1, alpha=0.335165
+  alphaSum=20.8346
+
+--- Stage 4 (T=50, detectThreshold=14.1747) ---
+  WC[0]: featureIdx=13640, threshold=-1.13405, polarity=1, alpha=0.707842
+  WC[1]: featureIdx=157404, threshold=-2.50414, polarity=1, alpha=0.642641
+  WC[2]: featureIdx=143203, threshold=0.952166, polarity=1, alpha=0.61364
+  WC[3]: featureIdx=132553, threshold=10.216, polarity=-1, alpha=0.59441
+  WC[4]: featureIdx=42094, threshold=57.7412, polarity=1, alpha=0.539846
+  WC[5]: featureIdx=144713, threshold=1.87884, polarity=-1, alpha=0.565437
+  WC[6]: featureIdx=45141, threshold=-1.10161, polarity=-1, alpha=0.527882
+  WC[7]: featureIdx=157635, threshold=-5.25983, polarity=1, alpha=0.559465
+  WC[8]: featureIdx=697, threshold=0.0553935, polarity=-1, alpha=0.507951
+  WC[9]: featureIdx=65546, threshold=7.34349, polarity=-1, alpha=0.509628
+  WC[10]: featureIdx=141716, threshold=-0.0193188, polarity=1, alpha=0.505026
+  WC[11]: featureIdx=160658, threshold=18.9366, polarity=1, alpha=0.518254
+  WC[12]: featureIdx=14490, threshold=3.23695, polarity=-1, alpha=0.547725
+  WC[13]: featureIdx=146008, threshold=2.2671, polarity=1, alpha=0.526052
+  WC[14]: featureIdx=14490, threshold=-3.21615, polarity=1, alpha=0.602633
+  WC[15]: featureIdx=66696, threshold=-47.4382, polarity=-1, alpha=0.535916
+  WC[16]: featureIdx=141762, threshold=-0.0522997, polarity=1, alpha=0.544657
+  WC[17]: featureIdx=362, threshold=-0.0186947, polarity=1, alpha=0.554697
+  WC[18]: featureIdx=141734, threshold=0, polarity=1, alpha=0.531864
+  WC[19]: featureIdx=145785, threshold=-0.167198, polarity=-1, alpha=0.501907
+  WC[20]: featureIdx=56841, threshold=1.17626, polarity=1, alpha=0.543107
+  WC[21]: featureIdx=87055, threshold=0.139578, polarity=-1, alpha=0.610837
+  WC[22]: featureIdx=62392, threshold=-0.139267, polarity=1, alpha=0.512821
+  WC[23]: featureIdx=148371, threshold=-1.18988, polarity=1, alpha=0.5311
+  WC[24]: featureIdx=56740, threshold=-2.26709, polarity=-1, alpha=0.623808
+  WC[25]: featureIdx=131470, threshold=4.55368, polarity=-1, alpha=0.585014
+  WC[26]: featureIdx=142485, threshold=-0.0279417, polarity=1, alpha=0.491203
+  WC[27]: featureIdx=148825, threshold=0.0591374, polarity=1, alpha=0.501992
+  WC[28]: featureIdx=148, threshold=-0.101843, polarity=-1, alpha=0.566984
+  WC[29]: featureIdx=142039, threshold=0.0404647, polarity=-1, alpha=0.556505
+  WC[30]: featureIdx=119, threshold=-0.0400537, polarity=1, alpha=0.59126
+  WC[31]: featureIdx=24476, threshold=5.1638, polarity=1, alpha=0.521702
+  WC[32]: featureIdx=141953, threshold=0.0425488, polarity=-1, alpha=0.570327
+  WC[33]: featureIdx=2962, threshold=0.15495, polarity=-1, alpha=0.50233
+  WC[34]: featureIdx=42289, threshold=176.205, polarity=1, alpha=0.557179
+  WC[35]: featureIdx=20486, threshold=2.31784, polarity=-1, alpha=0.537654
+  WC[36]: featureIdx=113068, threshold=8.01394, polarity=1, alpha=0.538875
+  WC[37]: featureIdx=29039, threshold=-0.30705, polarity=1, alpha=0.559947
+  WC[38]: featureIdx=154308, threshold=-5.48404, polarity=1, alpha=0.493686
+  WC[39]: featureIdx=6506, threshold=-2.57068, polarity=-1, alpha=0.492462
+  WC[40]: featureIdx=143407, threshold=-0.336489, polarity=1, alpha=0.593286
+  WC[41]: featureIdx=1841, threshold=-0.0173868, polarity=1, alpha=0.588382
+  WC[42]: featureIdx=10819, threshold=-0.417331, polarity=-1, alpha=0.498798
+  WC[43]: featureIdx=86591, threshold=0.573049, polarity=-1, alpha=0.524112
+  WC[44]: featureIdx=159421, threshold=-1.86404, polarity=-1, alpha=0.551181
+  WC[45]: featureIdx=43537, threshold=-0.105181, polarity=-1, alpha=0.49876
+  WC[46]: featureIdx=153394, threshold=1.08459, polarity=-1, alpha=0.48313
+  WC[47]: featureIdx=57154, threshold=-2.77824, polarity=-1, alpha=0.538362
+  WC[48]: featureIdx=143019, threshold=-0.370337, polarity=1, alpha=0.529269
+  WC[49]: featureIdx=143830, threshold=-1.22451, polarity=-1, alpha=0.485315
+  alphaSum=27.3169
+

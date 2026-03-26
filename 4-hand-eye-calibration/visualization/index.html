@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hand-Eye Calibration — 3D Visualization</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { display:flex; height:100vh; overflow:hidden; font-family:'Segoe UI',Arial,sans-serif; background:#0d0d1a; color:#c8d0f0; }
+
+/* ===== LEFT SIDEBAR ===== */
+#sidebar { width:340px; min-width:340px; display:flex; flex-direction:column; background:#111125; border-right:1px solid #2a2a55; z-index:10; }
+#sidebar-header { padding:14px 16px 10px; border-bottom:1px solid #2a2a55; }
+#sidebar-header h1 { font-size:15px; color:#aabbff; margin-bottom:2px; }
+#sidebar-header .sub { font-size:11px; color:#667799; }
+#tab-bar { display:flex; border-bottom:1px solid #2a2a55; }
+.tab-btn { flex:1; padding:10px 4px; font-size:11px; font-weight:600; cursor:pointer; background:transparent; border:none; color:#667799; border-bottom:2px solid transparent; transition:all .2s; }
+.tab-btn:hover { color:#99aacc; background:rgba(100,140,255,.05); }
+.tab-btn.active { color:#88aaff; border-bottom-color:#88aaff; background:rgba(100,140,255,.08); }
+.tab-panel { display:none; flex:1; overflow-y:auto; padding:14px 16px; }
+.tab-panel.active { display:block; }
+.tab-panel h2 { font-size:13px; color:#88aaff; margin-bottom:8px; }
+.tab-panel h3 { font-size:12px; color:#7799cc; margin:12px 0 6px; }
+.tab-panel p,.tab-panel li { font-size:11.5px; line-height:1.6; color:#99aabb; }
+.tab-panel ul { padding-left:16px; }
+.matrix-box { background:#0a0a18; border:1px solid #2a2a44; border-radius:6px; padding:10px 12px; font-family:'Consolas','Courier New',monospace; font-size:11px; line-height:1.7; color:#ccddff; overflow-x:auto; margin:6px 0 10px; }
+.matrix-box .label { color:#5577aa; font-size:10px; margin-bottom:4px; }
+.param { display:flex; justify-content:space-between; padding:3px 0; font-size:11.5px; border-bottom:1px solid rgba(100,140,255,.06); }
+.param .k { color:#7788aa; } .param .v { color:#ccddff; font-family:Consolas,monospace; }
+.det-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin:8px 0; }
+.det-cell { text-align:center; padding:6px 2px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer; }
+.det-cell.ok { background:rgba(60,180,60,.15); color:#66dd66; border:1px solid rgba(60,180,60,.25); }
+.det-cell.fail { background:rgba(180,60,60,.08); color:#885555; border:1px solid rgba(180,60,60,.12); }
+.img-preview { width:100%; border-radius:6px; border:1px solid #2a2a44; margin:6px 0; background:#080810; }
+
+/* ===== MAIN 3D ===== */
+#main-area { flex:1; position:relative; }
+canvas { display:block; }
+#info-panel { position:absolute; top:16px; right:16px; background:rgba(14,14,30,.92); border:1px solid rgba(100,140,255,.25); border-radius:10px; padding:14px 18px; backdrop-filter:blur(8px); min-width:280px; font-size:12px; line-height:1.7; }
+#info-panel h3 { color:#88aaff; font-size:13px; margin-bottom:6px; }
+.info-row { display:flex; justify-content:space-between; }
+.info-lbl { color:#6677aa; } .info-val { color:#dde0ff; font-family:Consolas,monospace; font-size:11px; }
+.info-sep { border-top:1px solid rgba(100,140,255,.12); margin:5px 0; }
+.badge { display:inline-block; padding:1px 8px; border-radius:4px; font-size:10px; font-weight:700; }
+.badge-ok { background:rgba(60,180,60,.2); color:#66dd66; }
+.badge-no { background:rgba(180,60,60,.2); color:#cc6666; }
+#slider-panel { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); background:rgba(14,14,30,.92); border:1px solid rgba(100,140,255,.25); border-radius:10px; padding:14px 22px; backdrop-filter:blur(8px); min-width:440px; }
+#slider-panel label { font-size:12px; color:#6677aa; }
+#slider-row { display:flex; align-items:center; gap:10px; margin-top:6px; }
+#pose-slider { flex:1; accent-color:#6688ff; cursor:pointer; }
+#pose-label { font-size:22px; font-weight:bold; color:#88aaff; min-width:36px; text-align:center; }
+#auto-btn { background:#2a3366; border:1px solid #445588; color:#bbccff; padding:5px 14px; border-radius:6px; cursor:pointer; font-size:12px; }
+#auto-btn:hover { background:#3a4477; }
+#auto-btn.active { background:#335522; border-color:#558833; color:#aaddaa; }
+#legend { position:absolute; bottom:80px; right:16px; background:rgba(14,14,30,.85); border:1px solid rgba(100,140,255,.15); border-radius:8px; padding:8px 12px; font-size:10px; line-height:2; }
+.lg-c { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:middle; margin-right:5px; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div id="sidebar-header">
+        <h1>Hand-Eye Calibration</h1>
+        <div class="sub">WooZhoon &nbsp;|&nbsp; Denso VS-6577GM-B · JAI BB-500</div>
+    </div>
+    <div id="tab-bar">
+        <button class="tab-btn active" data-tab="0">1. Corner</button>
+        <button class="tab-btn" data-tab="1">2. Calib</button>
+        <button class="tab-btn" data-tab="2">3. Pose</button>
+        <button class="tab-btn" data-tab="3">4. Hand-Eye</button>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="tab-panel active" id="panel-0">
+        <h2>1단계: Corner Detection</h2>
+        <p>OpenCV <code>findChessboardCorners</code> + <code>cornerSubPix</code>로 체스보드 내부 코너점을 검출합니다.</p>
+        <h3>Calibration Object</h3>
+        <div class="param"><span class="k">Pattern Size</span><span class="v">10 × 14 (inner corners)</span></div>
+        <div class="param"><span class="k">Square Size</span><span class="v">52.0 mm</span></div>
+        <div class="param"><span class="k">Total Corners</span><span class="v">140 points</span></div>
+        <h3>Hand-Eye Images Detection (14/15)</h3>
+        <div class="det-grid" id="det-grid"></div>
+        <h3>Corner Detection Preview</h3>
+        <div id="corner-img-container" style="text-align:center;color:#556;font-size:11px;">슬라이더로 pose를 선택하세요</div>
+        <h3>Internal Calibration</h3>
+        <div class="param"><span class="k">Detected</span><span class="v">39 / 42 images</span></div>
+        <div class="param"><span class="k">Success Rate</span><span class="v">92.9%</span></div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="tab-panel" id="panel-1">
+        <h2>2단계: Camera Calibration</h2>
+        <p>Zhang's method로 39장의 내부 캘리브레이션 이미지에서 카메라 내부 파라미터를 추정합니다.</p>
+        <h3>Intrinsic Matrix K</h3>
+        <div class="matrix-box"><div class="label">K =</div>[ 970.10 &nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp; 602.98 ]<br>[ &nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp; 968.03 &nbsp; 493.69 ]<br>[ &nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1 &nbsp;&nbsp;&nbsp;&nbsp; ]</div>
+        <h3>Parameters</h3>
+        <div class="param"><span class="k">fx</span><span class="v">970.10 px</span></div>
+        <div class="param"><span class="k">fy</span><span class="v">968.03 px</span></div>
+        <div class="param"><span class="k">cx</span><span class="v">602.98 px</span></div>
+        <div class="param"><span class="k">cy</span><span class="v">493.69 px</span></div>
+        <h3>Distortion Coefficients</h3>
+        <div class="param"><span class="k">k1</span><span class="v">-0.00594</span></div>
+        <div class="param"><span class="k">k2</span><span class="v">-0.00547</span></div>
+        <div class="param"><span class="k">p1, p2</span><span class="v">0, 0</span></div>
+        <h3>Quality</h3>
+        <div class="param"><span class="k">Reprojection Error</span><span class="v" style="color:#66dd88;">0.353 px</span></div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="tab-panel" id="panel-2">
+        <h2>3단계: Pose Estimation</h2>
+        <p>solvePnP (planar homography + LM)로 카메라 외부 파라미터를 추정합니다. T_cam→pattern</p>
+        <h3>Estimated Poses</h3>
+        <div class="param"><span class="k">Valid Camera Poses</span><span class="v">14 poses</span></div>
+        <div class="param"><span class="k">All C(14,2) Pairs</span><span class="v">91 pairs (65 used)</span></div>
+        <h3>Current Pose Transform</h3>
+        <div class="matrix-box" id="pose-matrix-box"><div class="label">T_cam→pattern</div><span style="color:#556;">pose를 선택하세요</span></div>
+        <h3>Algorithm</h3>
+        <ul>
+            <li>Iterative undistortion (k1, k2)</li>
+            <li>Normalized DLT → Homography H</li>
+            <li>K⁻¹H = [r₁ | r₂ | t]</li>
+            <li>r₃ = r₁ × r₂, SVD orthogonalization</li>
+            <li>LM refinement (distortion-aware)</li>
+        </ul>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="tab-panel" id="panel-3">
+        <h2>4단계: Hand-Eye Calibration</h2>
+        <p>T_robot × Z × T_cam = W 를 풀어 Z(T_EE→cam)와 W(T_base→pattern)를 구합니다.</p>
+        <h3>Hand-Eye Transform Z (T_EE→cam)</h3>
+        <div class="matrix-box"><div class="label">Z = T_EE→cam</div>[ &nbsp;0.9969 &nbsp; 0.0583 -0.0522 | &nbsp;121.1 ]<br>[ -0.0605 &nbsp; 0.9973 -0.0426 | &nbsp;533.9 ]<br>[ &nbsp;0.0496 &nbsp; 0.0456 &nbsp;0.9977 | -140.2 ]<br>[ &nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp; 1 ]</div>
+        <h3>World Transform W (T_base→pattern)</h3>
+        <div class="matrix-box"><div class="label">W = T_base→pattern</div>[ -0.0357 -0.0021 -0.9994 | -2190.0 ]<br>[ &nbsp;0.9994 -0.0046 -0.0357 | &nbsp;-365.7 ]<br>[ -0.0045 -1.0000 &nbsp;0.0023 | &nbsp; 478.6 ]<br>[ &nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp; 1 ]</div>
+        <h3>Setup</h3>
+        <div class="param"><span class="k">||tz||</span><span class="v">565.1 mm</span></div>
+        <div class="param"><span class="k">Avg Error</span><span class="v" style="color:#66dd88;">7.381</span></div>
+        <div class="param"><span class="k">Convention</span><span class="v">robot = T_EE→base</span></div>
+        <div class="matrix-box"><div class="label">Method</div>
+Rotation: AX=XB (Andreff SVD, 65 pairs)<br>
+Translation: Absolute pose equations<br>
+Refinement: Levenberg-Marquardt (12 params)<br>
+Outlier rejection: median × 2.5 threshold<br>
+Equation: T_base→EE × Z × T_cam→pattern = W</div>
+        <h3>Verification</h3>
+        <p>3D 뷰: 서로 다른 pose에서 복원한 체스보드 코너가 같은 위치에 모이면 캘리브레이션 성공</p>
+    </div>
+</div>
+
+<div id="main-area">
+    <div id="info-panel">
+        <h3>Pose Information</h3>
+        <div class="info-row"><span class="info-lbl">Pose Index</span><span class="info-val" id="info-pose">0</span></div>
+        <div class="info-sep"></div>
+        <div class="info-row"><span class="info-lbl">EE Position (base)</span></div>
+        <div class="info-row"><span class="info-val" id="info-ee"></span></div>
+        <div class="info-sep"></div>
+        <div class="info-row"><span class="info-lbl">Camera Position (base)</span></div>
+        <div class="info-row"><span class="info-val" id="info-cam"></span></div>
+        <div class="info-sep"></div>
+        <div class="info-row"><span class="info-lbl">Verify Error</span><span class="info-val" id="info-error"></span></div>
+        <div class="info-sep"></div>
+        <div class="info-row"><span class="info-lbl">Corners</span><span id="info-corners"></span></div>
+    </div>
+    <div id="legend">
+        <div><span class="lg-c" style="background:#ffaa22"></span>Active EE + Camera</div>
+        <div><span class="lg-c" style="background:#44cc66"></span>Detected pose</div>
+        <div><span class="lg-c" style="background:#554455"></span>No detection</div>
+        <div><span class="lg-c" style="background:#ff4444"></span>Reprojected corners</div>
+        <div><span class="lg-c" style="background:#88bbff"></span>Fixed board corners</div>
+        <div><span class="lg-c" style="background:#ff66aa"></span>Camera frustum</div>
+    </div>
+    <div id="slider-panel">
+        <label>Robot Pose (= End-Effector Position)</label>
+        <div id="slider-row">
+            <span style="color:#445566;font-size:12px;">0</span>
+            <input type="range" id="pose-slider" min="0" max="14" value="0" step="1">
+            <span style="color:#445566;font-size:12px;">14</span>
+            <span id="pose-label">0</span>
+            <button id="auto-btn">&#9654; Play</button>
+        </div>
+    </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ============================================================
+//  DATA — robot_cali.txt poses are T_EE→base (row-major 4x4)
+// ============================================================
+const robotPosesRaw = [
+ [-0.000002,0.999997,-0.002389,600.952737,-0.000796,-0.002389,-0.999997,398.08755,-1,0,0.000796,-600.31834,0,0,0,1],
+ [-0.000002,0.999997,-0.002389,300.953593,-0.000796,-0.002389,-0.999997,398.804244,-1,0,0.000796,-600.31834,0,0,0,1],
+ [-0.000002,0.999997,-0.002389,0.954449,-0.000796,-0.002389,-0.999997,399.520937,-1,0,0.000796,-600.31834,0,0,0,1],
+ [-0.000002,0.999997,-0.002389,-299.044694,-0.000796,-0.002389,-0.999997,400.23763,-1,0,0.000796,-600.31834,0,0,0,1],
+ [-0.000002,0.999997,-0.002389,-599.043838,-0.000796,-0.002389,-0.999997,400.954324,-1,0,0.000796,-600.31834,0,0,0,1],
+ [-0.099505,0.995034,-0.002389,538.511785,-0.000555,-0.002456,-0.999997,498.191803,-0.995037,-0.099504,0.000796,-657.122504,0,0,0,1],
+ [-0.099505,0.995034,-0.002389,240.001536,-0.000555,-0.002456,-0.999997,498.928711,-0.995037,-0.099504,0.000796,-627.271396,0,0,0,1],
+ [-0.099505,0.995034,-0.002389,-58.508712,-0.000555,-0.002456,-0.999997,499.665619,-0.995037,-0.099504,0.000796,-597.420288,0,0,0,1],
+ [-0.099505,0.995034,-0.002389,-357.01896,-0.000555,-0.002456,-0.999997,500.402526,-0.995037,-0.099504,0.000796,-567.56918,0,0,0,1],
+ [-0.099505,0.995034,-0.002389,-655.529208,-0.000555,-0.002456,-0.999997,501.139434,-0.995037,-0.099504,0.000796,-537.718072,0,0,0,1],
+ [0.099502,0.995035,-0.002389,657.677244,-0.00103,-0.002298,-0.999997,398.00195,-0.995037,0.099504,0.000796,-537.638439,0,0,0,1],
+ [0.099502,0.995035,-0.002389,359.166882,-0.00103,-0.002298,-0.999997,398.691315,-0.995037,0.099504,0.000796,-567.489547,0,0,0,1],
+ [0.099502,0.995035,-0.002389,60.65652,-0.00103,-0.002298,-0.999997,399.380681,-0.995037,0.099504,0.000796,-597.340655,0,0,0,1],
+ [0.099502,0.995035,-0.002389,-237.853842,-0.00103,-0.002298,-0.999997,400.070046,-0.995037,0.099504,0.000796,-627.191763,0,0,0,1],
+ [0.099502,0.995035,-0.002389,-536.364204,-0.00103,-0.002298,-0.999997,400.759412,-0.995037,0.099504,0.000796,-657.042871,0,0,0,1]
+];
+
+// Camera poses: T_cam→pattern (14 poses, from camera_transforms.txt, with distortion correction)
+const cameraPoseData = [
+ [0.995912,-0.060814,-0.066792,235.566,0.063461,0.997251,0.038251,-524.850,0.064282,-0.042334,0.997033,1755.86,0,0,0,1],
+ [0.997645,-0.060842,-0.031675,-65.778,0.062238,0.997039,0.045153,-541.673,0.028834,-0.047019,0.998478,1754.46,0,0,0,1],
+ [0.997600,-0.063540,0.027524,-364.371,0.062027,0.996682,0.052701,-557.485,-0.030781,-0.050867,0.998231,1772.00,0,0,0,1],
+ [0.995173,-0.064736,0.073762,-660.156,0.060822,0.996680,0.054127,-574.527,-0.077021,-0.049379,0.995806,1793.20,0,0,0,1],
+ [0.993336,-0.063181,0.096394,-957.195,0.058676,0.997080,0.048880,-590.966,-0.099201,-0.042898,0.994142,1820.13,0,0,0,1],
+ [0.998128,-0.060329,0.010079,384.142,0.060064,0.997887,0.024770,-416.324,-0.011552,-0.024118,0.999642,1719.98,0,0,0,1],
+ [0.997686,-0.059286,0.033287,85.053,0.058358,0.997897,0.028197,-432.715,-0.034889,-0.026189,0.999048,1740.09,0,0,0,1],
+ [0.992812,-0.062792,0.101893,-209.191,0.059278,0.997550,0.037161,-447.713,-0.103976,-0.030854,0.994101,1785.72,0,0,0,1],
+ [0.986059,-0.064341,0.153456,-502.344,0.057736,0.997219,0.047124,-464.237,-0.156061,-0.037607,0.987031,1831.67,0,0,0,1],
+ [0.981371,-0.062797,0.181568,-796.596,0.055094,0.997367,0.047165,-480.437,-0.184051,-0.036283,0.982247,1886.96,0,0,0,1],
+ [0.988264,-0.060552,-0.140244,78.059,0.066500,0.997058,0.038110,-534.227,0.137523,-0.046989,0.989383,1771.08,0,0,0,1],
+ [0.993096,-0.060850,-0.100285,-223.363,0.065353,0.996968,0.042235,-551.818,0.097411,-0.048497,0.994062,1746.81,0,0,0,1],
+ [0.997123,-0.063470,-0.041444,-522.243,0.065339,0.996830,0.045402,-568.560,0.038431,-0.047979,0.998109,1740.07,0,0,0,1],
+ [0.997916,-0.064460,-0.002928,-818.417,0.064526,0.996944,0.044031,-585.351,0.000081,-0.044128,0.999026,1734.17,0,0,0,1]
+];
+
+// Hand-Eye Z (T_EE→cam) — optimized with distortion correction
+const handEyeZ = [
+ 0.996934,0.058295,-0.052193,121.071,
+ -0.060544,0.997257,-0.042579,533.887,
+ 0.049568,0.045609,0.997729,-140.220,
+ 0,0,0,1
+];
+
+// World W (T_base→pattern) — optimized
+const worldW = [
+ -0.035692,-0.002106,-0.999361,-2190.040,
+ 0.999353,-0.004620,-0.035682,-365.693,
+ -0.004542,-0.999987,0.002269,478.591,
+ 0,0,0,1
+];
+
+const fx=970.10, fy=968.03, cx_=602.98, cy_=493.69;
+
+// Image i → robot pose i (images 0-13 detected, image 14 not)
+const detectedImages = new Set([0,1,2,3,4,5,6,7,8,9,10,11,12,13]);
+const detectedRobotPoses = new Set([0,1,2,3,4,5,6,7,8,9,10,11,12,13]);
+
+// Model: 10 rows × 14 cols inner corners, 52mm spacing
+const modelPts=[];
+for(let r=0;r<10;r++) for(let c=0;c<14;c++) modelPts.push([c*52,r*52]);
+
+// ============================================================
+//  MATH
+// ============================================================
+function m4arr(a){const m=new THREE.Matrix4();m.set(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],a[10],a[11],a[12],a[13],a[14],a[15]);return m;}
+function m4toA(m){const e=m.elements;return[e[0],e[4],e[8],e[12],e[1],e[5],e[9],e[13],e[2],e[6],e[10],e[14],e[3],e[7],e[11],e[15]];}
+function m4mul(a,b){const ma=m4arr(a),mb=m4arr(b);ma.multiply(mb);return m4toA(ma);}
+function m4inv(a){const m=m4arr(a);m.invert();return m4toA(m);}
+function m4pos(a){return[a[3],a[7],a[11]];}
+
+// Invert robot poses: T_EE→base → T_base→EE
+const robotBaseToEE = robotPosesRaw.map(p => m4inv(p));
+
+// Camera world position: T_base→EE × Z
+const cameraWorldPoses = robotBaseToEE.map(p => m4mul(p, handEyeZ));
+
+// ============================================================
+//  THREE.JS
+// ============================================================
+const mainArea=document.getElementById('main-area');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0a0a1e);
+
+const cam3=new THREE.PerspectiveCamera(50,1,10,80000);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+function resize(){const w=mainArea.clientWidth,h=mainArea.clientHeight;renderer.setSize(w,h);cam3.aspect=w/h;cam3.updateProjectionMatrix();}
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+mainArea.appendChild(renderer.domElement);
+resize();window.addEventListener('resize',resize);
+
+const ctrl=new OrbitControls(cam3,renderer.domElement);
+ctrl.enableDamping=true;ctrl.dampingFactor=0.08;
+
+scene.add(new THREE.AmbientLight(0x506080,2.0));
+const dL1=new THREE.DirectionalLight(0xffffff,1.2);dL1.position.set(2000,3000,2000);scene.add(dL1);
+const dL2=new THREE.DirectionalLight(0x8888ff,0.4);dL2.position.set(-2000,1000,-2000);scene.add(dL2);
+
+const root=new THREE.Group();
+scene.add(root);
+
+// ============================================================
+//  FIXED CHESSBOARD AT W (T_base→pattern)
+// ============================================================
+function makeCheckerTex(rows,cols){
+    const s=64,cv=document.createElement('canvas');cv.width=cols*s;cv.height=rows*s;
+    const x=cv.getContext('2d');
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){x.fillStyle=(r+c)%2===0?'#e8e8e8':'#1a1a1a';x.fillRect(c*s,r*s,s,s);}
+    return new THREE.CanvasTexture(cv);
+}
+
+const boardWorldMat = m4arr(worldW);
+const boardGrp=new THREE.Group();
+{
+    const bw=15*52,bh=11*52;
+    const bMesh=new THREE.Mesh(new THREE.PlaneGeometry(bw,bh),
+        new THREE.MeshPhongMaterial({map:makeCheckerTex(11,15),side:THREE.DoubleSide}));
+    bMesh.position.set(13*52/2,9*52/2,0);
+    boardGrp.add(bMesh);
+    const frame=new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.PlaneGeometry(bw+20,bh+20)),
+        new THREE.LineBasicMaterial({color:0xaaaaaa}));
+    frame.position.set(13*52/2,9*52/2,-1);
+    boardGrp.add(frame);
+    // Corner dots (fixed reference)
+    const dp=new Float32Array(140*3);
+    for(let i=0;i<140;i++){dp[i*3]=modelPts[i][0];dp[i*3+1]=modelPts[i][1];dp[i*3+2]=2;}
+    const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dp,3));
+    boardGrp.add(new THREE.Points(dg,new THREE.PointsMaterial({color:0x6699ff,size:6,sizeAttenuation:true})));
+    // Wall behind
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(bw*3,bh*3),
+        new THREE.MeshPhongMaterial({color:0x3a3a48,side:THREE.DoubleSide,transparent:true,opacity:0.5}));
+    wall.position.set(13*52/2,9*52/2,-3);
+    boardGrp.add(wall);
+
+    boardGrp.applyMatrix4(boardWorldMat);
+    root.add(boardGrp);
+}
+
+// Board center in world
+const boardCenter=new THREE.Vector3(13*52/2,9*52/2,0).applyMatrix4(boardWorldMat);
+
+// Base frame axes
+const baseAxes=new THREE.AxesHelper(200);
+root.add(baseAxes);
+
+// Board axes
+const boardAxes=new THREE.AxesHelper(300);
+boardAxes.applyMatrix4(boardWorldMat);
+root.add(boardAxes);
+
+// Robot→Scene: Z-up, then 180° around X to flip
+root.rotation.set(-Math.PI/2, 0, 0, 'XYZ');
+root.updateMatrixWorld(true);
+
+function toScene(rx,ry,rz){ return new THREE.Vector3(rx, rz, -ry); }
+const bcScene=toScene(boardCenter.x, boardCenter.y, boardCenter.z);
+
+// Average positions for camera setup
+const avgEE=new THREE.Vector3();
+for(let i=0;i<15;i++){const p=m4pos(robotBaseToEE[i]);avgEE.add(toScene(p[0],p[1],p[2]));}
+avgEE.divideScalar(15);
+
+cam3.position.set(avgEE.x, avgEE.y+1500, avgEE.z+2500);
+ctrl.target.copy(bcScene.clone().add(avgEE).multiplyScalar(0.5));
+ctrl.update();
+
+// ============================================================
+//  CAMERA/EE FRUSTUMS (ghost for all 15 poses)
+// ============================================================
+function makeFrustum(depth,col){
+    const fH=Math.atan2(cx_,fx)*2,fV=Math.atan2(cy_,fy)*2;
+    const hw=depth*Math.tan(fH/2),hh=depth*Math.tan(fV/2);
+    const v=new Float32Array([0,0,0,-hw,-hh,depth,0,0,0,hw,-hh,depth,0,0,0,hw,hh,depth,0,0,0,-hw,hh,depth,
+        -hw,-hh,depth,hw,-hh,depth,hw,-hh,depth,hw,hh,depth,hw,hh,depth,-hw,hh,depth,-hw,hh,depth,-hw,-hh,depth]);
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(v,3));
+    return new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:col}));
+}
+
+const ghostGroups=[];
+for(let i=0;i<15;i++){
+    const hasDet=detectedRobotPoses.has(i);
+
+    // EE position (small box)
+    const eeMat=m4arr(robotBaseToEE[i]);
+    const eeGrp=new THREE.Group();
+    eeGrp.add(new THREE.Mesh(new THREE.BoxGeometry(40,40,30),
+        new THREE.MeshPhongMaterial({color:hasDet?0x44cc66:0x554455,transparent:true,opacity:0.12,depthWrite:false})));
+    eeGrp.applyMatrix4(eeMat);
+    root.add(eeGrp);
+
+    // Camera frustum at T_base→EE × Z
+    const camMat=m4arr(cameraWorldPoses[i]);
+    const camGrp=new THREE.Group();
+    const fr=makeFrustum(160,hasDet?0xff66aa:0x443344);
+    fr.material.transparent=true;fr.material.opacity=0.12;
+    camGrp.add(fr);
+    camGrp.applyMatrix4(camMat);
+    root.add(camGrp);
+
+    // Line from EE to camera
+    if(hasDet){
+        const eePos=m4pos(robotBaseToEE[i]);
+        const camPos=m4pos(cameraWorldPoses[i]);
+        const vGeo=new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(...eePos), new THREE.Vector3(...camPos)]);
+        const vLine=new THREE.Line(vGeo,new THREE.LineDashedMaterial({
+            color:0x667788,dashSize:20,gapSize:15,transparent:true,opacity:0.1}));
+        vLine.computeLineDistances();
+        root.add(vLine);
+    }
+
+    ghostGroups.push({eeGrp,camGrp});
+}
+
+const activeLayer=new THREE.Group();root.add(activeLayer);
+
+// ============================================================
+//  UPDATE POSE
+// ============================================================
+let curPose=0;
+const imgBase='results/corner_detection/';
+
+function updatePose(idx){
+    curPose=idx;
+    // Ghost opacity
+    ghostGroups.forEach((g,i)=>{
+        const act=i===idx,det=detectedRobotPoses.has(i);
+        g.eeGrp.traverse(c=>{if(c.material)c.material.opacity=act?0:(det?0.12:0.04);});
+        g.camGrp.traverse(c=>{if(c.material)c.material.opacity=act?0:(det?0.12:0.04);});
+    });
+
+    while(activeLayer.children.length)activeLayer.remove(activeLayer.children[0]);
+
+    const hasDet=detectedRobotPoses.has(idx);
+    const eePos=m4pos(robotBaseToEE[idx]);
+    const camPos=m4pos(cameraWorldPoses[idx]);
+
+    // Active EE (orange box)
+    const eeGrp=new THREE.Group();
+    eeGrp.add(new THREE.Mesh(new THREE.BoxGeometry(55,55,40),
+        new THREE.MeshPhongMaterial({color:0xffaa22,transparent:true,opacity:0.8})));
+    eeGrp.add(new THREE.AxesHelper(120));
+    eeGrp.applyMatrix4(m4arr(robotBaseToEE[idx]));
+    activeLayer.add(eeGrp);
+
+    // Active camera frustum (pink)
+    const camGrp=new THREE.Group();
+    camGrp.add(makeFrustum(250,0xff66aa));
+    camGrp.add(new THREE.AxesHelper(100));
+    camGrp.applyMatrix4(m4arr(cameraWorldPoses[idx]));
+    activeLayer.add(camGrp);
+
+    // Line from EE to camera (Z offset)
+    const linkGeo=new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(...eePos), new THREE.Vector3(...camPos)]);
+    const linkLine=new THREE.Line(linkGeo,new THREE.LineBasicMaterial({color:0xffaa22,linewidth:2}));
+    activeLayer.add(linkLine);
+
+    // Optical axis: camera Z direction to board
+    const camZ3=[cameraWorldPoses[idx][2],cameraWorldPoses[idx][6],cameraWorldPoses[idx][10]];
+    const camOrigin=new THREE.Vector3(...camPos);
+    const rayEnd=camOrigin.clone().add(new THREE.Vector3(...camZ3).multiplyScalar(3000));
+    const rayGeo=new THREE.BufferGeometry().setFromPoints([camOrigin,rayEnd]);
+    const rayLine=new THREE.Line(rayGeo,new THREE.LineDashedMaterial({
+        color:hasDet?0x66ff88:0xff6644,dashSize:50,gapSize:25,transparent:true,opacity:0.5}));
+    rayLine.computeLineDistances();
+    activeLayer.add(rayLine);
+
+    // Board corners (reprojected via hand-eye)
+    if(hasDet){
+        const positions=[];
+        for(const[mx,my]of modelPts){
+            const p=new THREE.Vector4(mx,my,0,1);
+            p.applyMatrix4(boardWorldMat);
+            positions.push(p.x,p.y,p.z);
+        }
+        const cGeo=new THREE.BufferGeometry();
+        cGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+        activeLayer.add(new THREE.Points(cGeo,new THREE.PointsMaterial({color:0xff4444,size:10,sizeAttenuation:true})));
+    }
+
+    // Info panel
+    document.getElementById('info-pose').textContent=idx;
+    document.getElementById('info-ee').textContent=`(${eePos[0].toFixed(1)}, ${eePos[1].toFixed(1)}, ${eePos[2].toFixed(1)}) mm`;
+    document.getElementById('info-cam').textContent=`(${camPos[0].toFixed(1)}, ${camPos[1].toFixed(1)}, ${camPos[2].toFixed(1)}) mm`;
+    // Per-pose verification error
+    const errEl=document.getElementById('info-error');
+    if(hasDet && idx < cameraPoseData.length){
+        const check=m4mul(m4mul(robotBaseToEE[idx],handEyeZ),cameraPoseData[idx]);
+        const cp=m4pos(check),wp=m4pos(worldW);
+        const err=Math.sqrt((cp[0]-wp[0])**2+(cp[1]-wp[1])**2+(cp[2]-wp[2])**2);
+        errEl.textContent=`${err.toFixed(2)} mm`;
+        errEl.style.color=err<10?'#66dd88':'#ff6644';
+    }else{errEl.textContent='N/A';errEl.style.color='#556';}
+    const ce=document.getElementById('info-corners');
+    if(hasDet) ce.innerHTML=`<span class="badge badge-ok">YES — image ${idx}</span>`;
+    else ce.innerHTML=`<span class="badge badge-no">NO</span>`;
+
+    // Step 3 matrix
+    const pmBox=document.getElementById('pose-matrix-box');
+    if(hasDet && idx < cameraPoseData.length){
+        const p=cameraPoseData[idx];
+        pmBox.innerHTML=`<div class="label">T_cam→pattern (image ${idx})</div>`+
+            [0,1,2,3].map(r=>'[ '+[0,1,2,3].map(c=>{const v=p[r*4+c];return(v>=0?' ':'')+v.toFixed(4);}).join('  ')+' ]').join('<br>');
+    }else pmBox.innerHTML=`<div class="label">T_cam→pattern</div><span style="color:#556;">코너 검출 없음</span>`;
+
+    // Corner preview
+    const ic=document.getElementById('corner-img-container');
+    if(hasDet){
+        ic.innerHTML=`<img class="img-preview" src="${imgBase}handeye_image${idx}_corners.png" onerror="this.outerHTML='<div style=\\'padding:16px;color:#556;font-size:11px\\'>이미지 로드 불가</div>'">`;}
+    else ic.innerHTML=`<div style="padding:16px;color:#556;font-size:11px;">Pose ${idx}: 코너 미검출</div>`;
+}
+
+// ============================================================
+//  UI
+// ============================================================
+// Detection grid
+{const g=document.getElementById('det-grid');for(let i=0;i<15;i++){const d=document.createElement('div');d.className='det-cell '+(detectedRobotPoses.has(i)?'ok':'fail');d.textContent=`#${i}`;d.style.cursor='pointer';d.onclick=()=>{slider.value=i;poseLabel.textContent=i;updatePose(i);};g.appendChild(d);}}
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('panel-'+btn.dataset.tab).classList.add('active');});});
+
+// Slider
+const slider=document.getElementById('pose-slider'),poseLabel=document.getElementById('pose-label'),autoBtn=document.getElementById('auto-btn');
+slider.addEventListener('input',()=>{const v=parseInt(slider.value);poseLabel.textContent=v;updatePose(v);});
+let autoPlay=false,autoInt=null;
+autoBtn.addEventListener('click',()=>{autoPlay=!autoPlay;autoBtn.classList.toggle('active',autoPlay);autoBtn.innerHTML=autoPlay?'&#9646;&#9646; Stop':'&#9654; Play';if(autoPlay)autoInt=setInterval(()=>{let n=(parseInt(slider.value)+1)%15;slider.value=n;poseLabel.textContent=n;updatePose(n);},1200);else clearInterval(autoInt);});
+
+updatePose(0);
+
+// Diagnostics
+console.log('=== Hand-Eye Calibration Diagnostics ===');
+console.log('Board W position:', m4pos(worldW).map(v=>v.toFixed(1)));
+for(let i=0;i<15;i++){
+    const ee=m4pos(robotBaseToEE[i]);
+    const cam=m4pos(cameraWorldPoses[i]);
+    console.log(`Pose ${i}: EE=(${ee.map(v=>v.toFixed(0))}), Cam=(${cam.map(v=>v.toFixed(0))}), det=${detectedRobotPoses.has(i)}`);
+}
+// Verify: T_base→EE × Z × T_cam→pattern ≈ W for each detected pose
+for(let i=0;i<cameraPoseData.length;i++){
+    const check=m4mul(m4mul(robotBaseToEE[i],handEyeZ),cameraPoseData[i]);
+    const cp=m4pos(check);
+    const wp=m4pos(worldW);
+    const err=Math.sqrt((cp[0]-wp[0])**2+(cp[1]-wp[1])**2+(cp[2]-wp[2])**2);
+    console.log(`Verify pose ${i}: board=(${cp.map(v=>v.toFixed(0))}), err=${err.toFixed(1)}mm`);
+}
+
+(function animate(){requestAnimationFrame(animate);ctrl.update();renderer.render(scene,cam3);})();
+</script>
+</body>
+</html>
